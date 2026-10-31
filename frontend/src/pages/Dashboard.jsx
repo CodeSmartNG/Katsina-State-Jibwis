@@ -1,5 +1,10 @@
 import { useAuth } from '../services/auth.jsx';
 import { useLang } from '../services/i18n.jsx';
+import { Link } from 'react-router-dom';
+
+
+
+
 
 export default function Dashboard() {
   const { user, isOfficer } = useAuth();
@@ -49,8 +54,11 @@ export default function Dashboard() {
           </h2>
           <p style={{ margin: 0, color: '#666' }}>{user.email}</p>
         </div>
+        <Link to="/profile" className="btn btn-sm" style={{ marginTop: '10px' }}>
+  Edit Profile
+</Link>
       </div>
-
+       
       {/* User Details Section */}
       <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
         <p><strong>{t('roles')}:</strong> <span style={{ textTransform: 'capitalize' }}>{user.role}</span></p>
