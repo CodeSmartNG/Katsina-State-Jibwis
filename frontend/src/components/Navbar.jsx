@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom'; // 👈 Added Link
 import { useAuth } from '../services/auth.jsx';
 import { useLang } from '../services/i18n.jsx';
 
@@ -7,7 +7,7 @@ export default function Navbar() {
   const { user, logout, isOfficer } = useAuth();
   const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false); // Mobile menu state
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -15,7 +15,6 @@ export default function Navbar() {
     setIsOpen(false);
   };
 
-  // Helper for active link styles
   const linkClass = ({ isActive }) => (isActive ? 'nav-item active' : 'nav-item');
 
   return (
@@ -70,7 +69,13 @@ export default function Navbar() {
             {/* User Info / Auth Buttons */}
             {user ? (
               <div className="user-section">
-                <div className="user-chip">
+                {/* 👇 CHANGED: User Chip is now a Link to /profile */}
+                <Link 
+                  to="/profile" 
+                  className="user-chip" 
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                  onClick={() => setIsOpen(false)}
+                >
                   {user.profilePicture ? (
                     <img src={user.profilePicture} alt="Profile" className="nav-avatar" />
                   ) : (
@@ -80,7 +85,8 @@ export default function Navbar() {
                     <span className="user-name">{user.fullName}</span>
                     <span className="user-role">{user.role}</span>
                   </div>
-                </div>
+                </Link>
+                
                 <button className="btn-logout" onClick={handleLogout}>
                   {t('logout')}
                 </button>
