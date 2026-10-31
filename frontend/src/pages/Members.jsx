@@ -17,37 +17,47 @@ export default function Members() {
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const onFileChange = (e) => setProfilePicture(e.target.files[0]);
 
+  
   const create = async (e) => {
-    e.preventDefault();
-    setMsg('');
-    try {
-      // 1. Create FormData
-      const formData = new FormData();
-      Object.keys(form).forEach((key) => {
-        formData.append(key, form[key]);
-      });
-      
-      // 2. Append the image if one is selected
-      if (profilePicture) {
-        formData.append('profilePicture', profilePicture);
-      }
+  e.preventDefault();
+  setMsg('');
+  try {
+    const formData = new FormData();
+    
+    // 1. Explicitly append fields (safer than Object.keys)
+    formData.append('fullName', form.fullName);
+    formData.append('email', form.email);
+    formData.append('password', form.password);
+    formData.append('role', form.role);
 
-      // 3. Send as FormData
-      await api.post('/users', formData);
-      
-      setMsg('Member created');
-      
-      // 4. Reset form and file input
-      setForm({ fullName: '', email: '', password: '', role: 'member' });
-      setProfilePicture(null);
-      document.getElementById('memberPicInput').value = ''; 
-      
-      load();
-    } catch (e) {
-      setMsg(e.response?.data?.message || 'Failed');
+    // 2. Append image if selected
+    if (profilePicture) {
+      formData.append('profilePicture', profilePicture);
     }
-  };
 
+    // 3. Send as FormData WITH explicit headers
+    await api.post('/users', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    setMsg('Member created successfully');
+    
+    // 4. Reset form
+    setForm({ fullName: '', email: '', password: '', role: 'member' });
+    setProfilePicture(null);
+    document.getElementById('memberPicInput').value = ''; 
+    
+    load();
+  } catch (e) {
+    console.error(e); // Log the full error to console for debugging
+    setMsg(e.response?.data?.message || 'Failed to create member');
+  }
+};
+
+
+  
   const approve = async (id) => { await api.patch(`/users/${id}/approve`); load(); };
 
   return (
