@@ -3,27 +3,39 @@ import { z } from 'zod';
 import User from '../models/User.js';
 import { signToken } from '../utils/token.js';
 import { authenticate } from '../middleware/auth.js';
+import { upload } from '../config/cloudinary.js'; // 👈 Import Cloudinary upload
 
 const router = Router();
 
 const registerSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
-  phone: z.string().optional(),
+  phone: z.string().optional().or(z.literal('')),
   password: z.string().min(6),
-  state: z.string().optional(),
-  lga: z.string().optional(),
-  ward: z.string().optional(),
+  state: z.string().optional().or(z.literal('')),
+  lga: z.string().optional().or(z.literal('')),
+  ward: z.string().optional().or(z.literal('')),
+  profilePicture: z.string().optional(),
 });
 
 // Public self-registration — creates a member awaiting approval
-router.post('/register', async (req, res, next) => {
+// 👇 Added upload.single('profilePicture')
+router.post('/register', upload.single('profilePicture'), async (req, res, next) => {
   try {
-    const data = registerSchema.parse(req.body);
+    // If a file was uploaded, req.file.path holds the Cloudinary URL
+    const profilePicture = req.file ? req.file.path : '';
+
+    // Parse the form data (req.body) along with the image URL
+    const data = registerSchema.parse({
+      ...req.body,
+      profilePicture,
+    });
+
     const exists = await User.findOne({ email: data.email });
     if (exists) return res.status(409).json({ message: 'Email already registered' });
 
     const user = await User.create({ ...data, role: 'member', isApproved: false });
+    
     res.status(201).json({
       message: 'Registration submitted. Await approval by an officer.',
       user: { id: user._id, email: user.email, isApproved: user.isApproved },
@@ -39,8 +51,10 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password');
+    
     if (!user || !(await user.comparePassword(password)))
       return res.status(401).json({ message: 'Invalid credentials' });
+      
     if (!user.isApproved)
       return res.status(403).json({ message: 'Account pending approval' });
 
@@ -55,6 +69,7 @@ router.post('/login', async (req, res, next) => {
         state: user.state,
         lga: user.lga,
         ward: user.ward,
+        profilePicture: user.profilePicture, // 👈 Added this
       },
     });
   } catch (err) {
@@ -72,6 +87,7 @@ router.get('/me', authenticate, (req, res) => {
     state: u.state,
     lga: u.lga,
     ward: u.ward,
+    profilePicture: u.profilePicture, // 👈 Added this
   });
 });
 
