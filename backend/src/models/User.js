@@ -16,6 +16,8 @@ const userSchema = new mongoose.Schema(
     isApproved: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    
+    profilePicture: { type: String, default: '' },
   },
   { timestamps: true }
 );
