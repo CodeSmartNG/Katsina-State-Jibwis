@@ -38,6 +38,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    updateUser,
     isOfficer: user && ['wardOfficer', 'lgaOfficer', 'stateAdmin'].includes(user.role),
   };
 
