@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard.jsx';
 import Announcements from './pages/Announcements.jsx';
 import Activities from './pages/Activities.jsx';
 import Members from './pages/Members.jsx';
+import Profile from './pages/Profile.jsx'; 
+
 
 export default function App() {
   return (
@@ -36,6 +38,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          
+<Route
+  path="/profile"
+  element={
+    <ProtectedRoute>
+      <Profile />
+    </ProtectedRoute>
+  }
+/>
         </Routes>
       </main>
     </>
