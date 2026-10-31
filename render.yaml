@@ -1,0 +1,37 @@
+# Render Blueprint — JIBWIS Portal backend
+# Deploy: Render Dashboard → New → Blueprint → pick this repo
+services:
+  - type: web
+    name: jibwis-api
+    runtime: node
+    plan: free
+    region: oregon                 # or: frankfurt, ohio, singapore
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm run start:with-seed
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.1
+
+      # Paste these in the Render dashboard after the service is created
+      - key: MONGO_URI
+        sync: false
+      - key: ADMIN_SEED_PASSWORD
+        sync: false
+
+      # Auto-generated — Render creates a random strong value
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+      - key: ADMIN_SEED_EMAIL
+        value: admin@jibwis.local
+
+      - key: CORS_ORIGIN
+        value: https://katsina-state-jibwis-rho.vercel.app
+
+      # PORT is set by Render automatically — do NOT add it here
