@@ -13,6 +13,9 @@ import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
+// 1. TRUST RENDER'S PROXY (Fixes the rate-limit crash)
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' }));
 app.use(express.json());
@@ -33,6 +36,12 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-  app.listen(PORT, () => console.log(`🚀 API on http://localhost:${PORT}`));
+// 2. START THE SERVER FIRST (Prevents Render from timing out)
+app.listen(PORT, () => {
+  console.log(`🚀 API on http://localhost:${PORT}`);
+  
+  // 3. CONNECT TO DATABASE IN BACKGROUND
+  connectDB().catch((err) => {
+    console.error('❌ MongoDB connection failed:', err.message);
+  });
 });
