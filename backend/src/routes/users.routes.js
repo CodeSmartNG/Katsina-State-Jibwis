@@ -125,4 +125,20 @@ router.patch('/:id/active', authenticate, authorize('stateAdmin'), async (req, r
   }
 });
 
+// Remove a member (stateAdmin only)
+router.delete('/:id', authenticate, authorize('stateAdmin'), async (req, res, next) => {
+  try {
+    // Prevent the admin from deleting themselves
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot remove your own account' });
+    }
+
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ message: 'Member removed successfully', id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
 export default router;
