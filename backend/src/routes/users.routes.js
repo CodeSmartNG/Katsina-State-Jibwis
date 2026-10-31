@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import User, { ROLES_LIST } from '../models/User.js';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { upload } from '../config/cloudinary.js'; // 👈 Import Cloudinary upload
+import { upload } from '../config/cloudinary.js';
 
 const router = Router();
 
@@ -27,7 +27,6 @@ router.get('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin
     if (ward) filter.ward = ward;
     if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
 
-    // Note: profilePicture will be included automatically in the returned data
     const users = await User.find(filter).select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
@@ -36,13 +35,25 @@ router.get('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin
 });
 
 // Officer creates a member (auto-approved)
-// 👇 Added upload.single('profilePicture')
 router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin'), upload.single('profilePicture'), async (req, res, next) => {
   try {
+    // 🚨 DEBUGGING LOGS: Check your Render Logs to see if this is empty
+    console.log("--- NEW MEMBER REQUEST ---");
+    console.log("Body:", req.body);
+    console.log("File:", req.file);
+
     const { fullName, email, password, phone, role = 'member', state, lga, ward } = req.body;
     
     // Extract image URL from Cloudinary
     const profilePicture = req.file ? req.file.path : '';
+
+    // Fallback check to catch the exact missing field
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ 
+        message: 'Validation failed: fullName, email, and password are required.',
+        receivedBody: req.body 
+      });
+    }
 
     // Officer cannot create a role above their own level
     const roleRank = { member: 0, wardOfficer: 1, lgaOfficer: 2, stateAdmin: 3 };
@@ -55,10 +66,10 @@ router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmi
       password,
       phone,
       role,
-      state: state || req.user.state, // Changed to || in case frontend sends empty string
+      state: state || req.user.state,
       lga: lga || req.user.lga,
       ward: ward || req.user.ward,
-      profilePicture, // 👈 Save the image URL
+      profilePicture,
       isApproved: true,
       createdBy: req.user._id,
     });
