@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api.js';
 import { useAuth } from '../services/auth.jsx';
 import { useLang } from '../services/i18n.jsx';
@@ -11,6 +11,11 @@ export default function Members() {
   const [profilePicture, setProfilePicture] = useState(null);
   const [msg, setMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 👇 NEW: Search and Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const load = () => api.get('/users').then((r) => setUsers(r.data));
   useEffect(() => { load(); }, []);
@@ -51,32 +56,51 @@ export default function Members() {
     load(); 
   };
 
-  // 👇 NEW: Update Role (Promotion)
   const updateRole = async (id, newRole) => {
     try {
       await api.patch(`/users/${id}/role`, { role: newRole });
-      load(); // Refresh the table
+      load();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update role');
     }
   };
 
-  // 👇 NEW: Remove Member
   const removeMember = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove ${name}? This cannot be undone.`)) return;
-    
     try {
       await api.delete(`/users/${id}`);
-      load(); // Refresh the table
+      load();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to remove member');
     }
   };
 
+  // 👇 NEW: The Filtering Logic
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      // 1. Search Match (Name or Email)
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        u.fullName.toLowerCase().includes(searchLower) || 
+        u.email.toLowerCase().includes(searchLower);
+
+      // 2. Role Match
+      const matchesRole = filterRole === 'all' || u.role === filterRole;
+
+      // 3. Status Match
+      let matchesStatus = true;
+      if (filterStatus === 'approved') matchesStatus = u.isApproved === true;
+      if (filterStatus === 'pending') matchesStatus = u.isApproved === false;
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchTerm, filterRole, filterStatus]);
+
   return (
     <div>
       <h2>{t('members')}</h2>
 
+      {/* CREATE MEMBER FORM */}
       <form className="card" onSubmit={create}>
         <h3>Register member (officer)</h3>
         
@@ -104,6 +128,38 @@ export default function Members() {
         </button>
       </form>
 
+      <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid #eee' }} />
+
+      {/* 👇 NEW: SEARCH & FILTER CONTROLS */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <input 
+          type="text" 
+          placeholder="🔍 Search by name or email..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ flex: '1', minWidth: '200px', padding: '10px' }}
+        />
+        
+        <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={{ padding: '10px' }}>
+          <option value="all">All Roles</option>
+          <option value="member">Member</option>
+          <option value="wardOfficer">Ward Officer</option>
+          <option value="lgaOfficer">LGA Officer</option>
+          <option value="stateAdmin">State Admin</option>
+        </select>
+
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '10px' }}>
+          <option value="all">All Statuses</option>
+          <option value="approved">Approved (✅)</option>
+          <option value="pending">Pending (⏳)</option>
+        </select>
+      </div>
+
+      <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
+        Showing {filteredUsers.length} of {users.length} members
+      </p>
+
+      {/* MEMBERS TABLE */}
       <table className="table">
         <thead>
           <tr>
@@ -111,8 +167,8 @@ export default function Members() {
           </tr>
         </thead>
         <tbody>
-          {users.map((u) => {
-            const isSelf = u._id === user.id; // Prevent admin from editing themselves
+          {filteredUsers.map((u) => {
+            const isSelf = u._id === user.id;
             const canManage = user.role === 'stateAdmin' && !isSelf;
 
             return (
@@ -130,7 +186,6 @@ export default function Members() {
                 
                 <td>{u.email}</td>
                 
-                {/* 👇 ROLE DROPDOWN / TEXT */}
                 <td>
                   {canManage ? (
                     <select 
@@ -150,7 +205,6 @@ export default function Members() {
 
                 <td>{u.isApproved ? '✅' : '⏳'}</td>
                 
-                {/* 👇 ACTION BUTTONS (Approve / Remove) */}
                 <td style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {!u.isApproved && (
                     <button className="btn btn-sm" onClick={() => approve(u._id)}>
@@ -170,6 +224,14 @@ export default function Members() {
               </tr>
             );
           })}
+          
+          {filteredUsers.length === 0 && (
+            <tr>
+              <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                No members found matching your search.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
