@@ -141,4 +141,39 @@ router.delete('/:id', authenticate, authorize('stateAdmin'), async (req, res, ne
     next(err);
   }
 });
+
+// Update own profile (any logged-in user)
+router.put('/profile', authenticate, upload.single('profilePicture'), async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Update allowed fields
+    if (req.body.fullName) user.fullName = req.body.fullName;
+    if (req.body.phone !== undefined) user.phone = req.body.phone;
+    if (req.body.password) user.password = req.body.password; 
+    
+    // Update image if a new one was uploaded
+    if (req.file) user.profilePicture = req.file.path;
+
+    const updatedUser = await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser._id,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        state: updatedUser.state,
+        lga: updatedUser.lga,
+        ward: updatedUser.ward,
+        phone: updatedUser.phone,
+        profilePicture: updatedUser.profilePicture,
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 export default router;
