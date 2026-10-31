@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// 👇 Changed to the v2 package to fix the NPM dependency conflict
+import { CloudinaryStorage } from 'multer-storage-cloudinary-v2'; 
 import multer from 'multer';
 
 cloudinary.config({
