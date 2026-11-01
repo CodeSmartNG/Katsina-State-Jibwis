@@ -10,13 +10,16 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ROLES, default: 'member' },
+    
+    // 👇 NEW: Organizational Rank/Title (e.g., Chairman, Secretary, Member)
+    rank: { type: String, default: 'Member', trim: true }, 
+    
     state: { type: String, trim: true },
     lga: { type: String, trim: true },
     ward: { type: String, trim: true },
     isApproved: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    
     profilePicture: { type: String, default: '' },
   },
   { timestamps: true }
