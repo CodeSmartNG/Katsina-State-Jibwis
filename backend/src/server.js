@@ -11,6 +11,7 @@ import announcementRoutes from './routes/announcements.routes.js';
 import activityRoutes from './routes/activities.routes.js';
 import leaderRoutes from './routes/leaders.routes.js'; // 👈 Leader routes
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/leaders', leaderRoutes); // 👈 Using Leader Routes here
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
