@@ -9,11 +9,12 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/users.routes.js';
 import announcementRoutes from './routes/announcements.routes.js';
 import activityRoutes from './routes/activities.routes.js';
+import leaderRoutes from './routes/leaders.routes.js'; // 👈 Leader routes
 import { notFound, errorHandler } from './middleware/errorHandler.js';
-import leaderRoutes from './routes/leaders.routes.js';
+
 const app = express();
 
-// 1. TRUST RENDER'S PROXY (Fixes the rate-limit crash)
+// 1. TRUST RENDER'S PROXY
 app.set('trust proxy', 1);
 
 app.use(helmet());
@@ -30,16 +31,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/activities', activityRoutes);
-app.use('/api/announcements', announcementRoutes);
-app.use('/api/activities', activityRoutes);
-app.use('/api/leaders', leaderRoutes);
+app.use('/api/leaders', leaderRoutes); // 👈 Using Leader Routes here
 
 app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// 2. START THE SERVER FIRST (Prevents Render from timing out)
+// 2. START THE SERVER FIRST
 app.listen(PORT, () => {
   console.log(`🚀 API on http://localhost:${PORT}`);
   
