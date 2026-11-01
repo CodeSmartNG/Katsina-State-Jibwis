@@ -15,19 +15,19 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Add a new leader (StateAdmin only)
-router.post('/', authenticate, authorize('stateAdmin'), upload.single('image'), async (req, res, next) => {
+// Update a leader (StateAdmin only)
+router.put('/:id', authenticate, authorize('stateAdmin'), async (req, res, next) => {
   try {
     const { name, title } = req.body;
-    if (!req.file) return res.status(400).json({ message: 'Image is required' });
+    
+    const leader = await Leader.findByIdAndUpdate(
+      req.params.id,
+      { name, title },
+      { new: true }
+    );
 
-    const leader = await Leader.create({
-      name,
-      title,
-      imageUrl: req.file.path, // Cloudinary URL
-    });
-
-    res.status(201).json(leader);
+    if (!leader) return res.status(404).json({ message: 'Leader not found' });
+    res.json(leader);
   } catch (err) {
     next(err);
   }
