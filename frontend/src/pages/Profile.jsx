@@ -7,18 +7,19 @@ export default function Profile() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   
-  // 👇 SAFETY CHECK: Prevent crash if user data is still loading
-  if (!user) return <div className="container">Loading profile...</div>;
-
+  // ✅ ALL HOOKS MUST BE CALLED FIRST
   const [form, setForm] = useState({
-    fullName: user.fullName || '',
-    phone: user.phone || '',
+    fullName: user?.fullName || '',
+    phone: user?.phone || '',
     password: '',
   });
   const [profilePicture, setProfilePicture] = useState(null);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ✅ SAFETY CHECK COMES AFTER HOOKS
+  if (!user) return <div className="container">Loading profile...</div>;
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const onFileChange = (e) => setProfilePicture(e.target.files[0]);
@@ -61,7 +62,6 @@ export default function Profile() {
       </p>
 
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {user.profilePicture ? (
             <img src={user.profilePicture} alt="Profile" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover' }} />
