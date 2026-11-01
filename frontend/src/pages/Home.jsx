@@ -5,9 +5,11 @@ import { useLang } from '../services/i18n.jsx';
 import { useAuth } from '../services/auth.jsx';
 
 export default function Home() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { user } = useAuth();
+  
   const [leaders, setLeaders] = useState([]);
+  const [recentAnnouncements, setRecentAnnouncements] = useState([]);
   
   // Admin upload states
   const [name, setName] = useState('');
@@ -16,7 +18,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // 👇 New states for Editing
+  // Edit states
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editTitle, setEditTitle] = useState('');
@@ -25,8 +27,16 @@ export default function Home() {
     api.get('/leaders').then((res) => setLeaders(res.data)).catch(console.error);
   };
 
+  const fetchAnnouncements = () => {
+    api.get('/announcements').then((res) => {
+      // Get only the top 3 most recent announcements
+      setRecentAnnouncements(res.data.slice(0, 3));
+    }).catch(console.error);
+  };
+
   useEffect(() => {
     fetchLeaders();
+    fetchAnnouncements();
   }, []);
 
   const handleUpload = async (e) => {
@@ -62,18 +72,16 @@ export default function Home() {
     fetchLeaders();
   };
 
-  // 👇 New function to save the edit
   const saveEdit = async (id) => {
     try {
       await api.put(`/leaders/${id}`, { name: editName, title: editTitle });
-      setEditingId(null); // Close the edit mode
-      fetchLeaders();     // Refresh the list
+      setEditingId(null); 
+      fetchLeaders();     
     } catch (err) {
       alert('Failed to update leader');
     }
   };
 
-  // Duplicate the array to make the infinite scroll seamless
   const carouselLeaders = leaders.length > 0 ? [...leaders, ...leaders, ...leaders] : [];
 
   return (
@@ -98,8 +106,6 @@ export default function Home() {
             <div className="marquee-content">
               {carouselLeaders.map((leader, index) => (
                 <div className="leader-card" key={`${leader._id}-${index}`}>
-                  
-                  {/* If we are editing THIS card, show the edit form instead of the image */}
                   {editingId === leader._id ? (
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
                       <h4 style={{ margin: 0 }}>Edit Leader</h4>
@@ -111,40 +117,20 @@ export default function Home() {
                       </div>
                     </div>
                   ) : (
-                    /* Normal View */
                     <>
                       <img src={leader.imageUrl} alt={leader.name} />
                       <div className="leader-info">
                         <h3>{leader.name}</h3>
                         <p>{leader.title}</p>
-                        
-                        {/* 👇 Always-Visible Admin Buttons */}
                         {user?.role === 'stateAdmin' && (
                           <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'center' }}>
-                            <button 
-                              className="btn btn-sm" 
-                              style={{ backgroundColor: '#3b82f6', color: 'white', padding: '5px 15px' }}
-                              onClick={() => {
-                                setEditingId(leader._id);
-                                setEditName(leader.name);
-                                setEditTitle(leader.title);
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button 
-                              className="btn btn-sm" 
-                              style={{ backgroundColor: '#ef4444', color: 'white', padding: '5px 15px' }}
-                              onClick={() => deleteLeader(leader._id)}
-                            >
-                              Delete
-                            </button>
+                            <button className="btn btn-sm" style={{ backgroundColor: '#3b82f6', color: 'white', padding: '5px 15px' }} onClick={() => { setEditingId(leader._id); setEditName(leader.name); setEditTitle(leader.title); }}>Edit</button>
+                            <button className="btn btn-sm" style={{ backgroundColor: '#ef4444', color: 'white', padding: '5px 15px' }} onClick={() => deleteLeader(leader._id)}>Delete</button>
                           </div>
                         )}
                       </div>
                     </>
                   )}
-
                 </div>
               ))}
             </div>
@@ -152,9 +138,38 @@ export default function Home() {
         )}
       </div>
 
+      {/* 👇 NEW: RECENT ANNOUNCEMENTS SECTION */}
+      <div className="recent-news-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
+          <h2 style={{ margin: 0, color: '#065f46' }}>Recent Announcements</h2>
+          <Link to="/announcements" style={{ color: '#0d9488', fontWeight: 'bold', textDecoration: 'none' }}>
+            View All →
+          </Link>
+        </div>
+
+        {recentAnnouncements.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#666' }}>No announcements posted yet.</p>
+        ) : (
+          <div className="news-grid">
+            {recentAnnouncements.map((ann) => (
+              <div key={ann._id} className="news-card">
+                <div className="news-content">
+                  <h3>{lang === 'ha' && ann.titleHa ? ann.titleHa : ann.title}</h3>
+                  <p>{lang === 'ha' && ann.bodyHa ? ann.bodyHa : ann.body}</p>
+                </div>
+                <div className="news-footer">
+                  <span>📅 {new Date(ann.createdAt).toLocaleDateString()}</span>
+                  <span className="scope-badge">{ann.scope}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* ADMIN UPLOAD FORM */}
       {user?.role === 'stateAdmin' && (
-        <div className="admin-upload-section card">
+        <div className="admin-upload-section card" style={{ marginTop: '3rem' }}>
           <h3>Admin: Add Leader Picture</h3>
           <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>
             Add pictures to display them in the moving carousel.
