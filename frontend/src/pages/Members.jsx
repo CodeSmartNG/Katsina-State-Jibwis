@@ -12,7 +12,6 @@ export default function Members() {
   const [msg, setMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 👇 NEW: Search and Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -75,23 +74,36 @@ export default function Members() {
     }
   };
 
-  // 👇 NEW: The Filtering Logic
+  // 👇 NEW: Promote/Demote Logic
+  const handleRankChange = (id, currentRole, action) => {
+    const ranks = ['member', 'wardOfficer', 'lgaOfficer', 'stateAdmin'];
+    const currentIndex = ranks.indexOf(currentRole);
+    
+    if (action === 'promote' && currentIndex < ranks.length - 1) {
+      updateRole(id, ranks[currentIndex + 1]);
+    } else if (action === 'demote' && currentIndex > 0) {
+      updateRole(id, ranks[currentIndex - 1]);
+    }
+  };
+
+  // 👇 NEW: Visual Rank Badges
+  const getRoleBadge = (role) => {
+    switch(role) {
+      case 'stateAdmin': return <span style={{background: '#fef2f2', color: '#ef4444', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem'}}>State Admin</span>;
+      case 'lgaOfficer': return <span style={{background: '#eff6ff', color: '#3b82f6', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem'}}>LGA Officer</span>;
+      case 'wardOfficer': return <span style={{background: '#f0fdf4', color: '#22c55e', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem'}}>Ward Officer</span>;
+      default: return <span style={{background: '#f3f4f6', color: '#6b7280', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem'}}>Member</span>;
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      // 1. Search Match (Name or Email)
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        u.fullName.toLowerCase().includes(searchLower) || 
-        u.email.toLowerCase().includes(searchLower);
-
-      // 2. Role Match
+      const matchesSearch = u.fullName.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower);
       const matchesRole = filterRole === 'all' || u.role === filterRole;
-
-      // 3. Status Match
       let matchesStatus = true;
       if (filterStatus === 'approved') matchesStatus = u.isApproved === true;
       if (filterStatus === 'pending') matchesStatus = u.isApproved === false;
-
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, searchTerm, filterRole, filterStatus]);
@@ -100,14 +112,10 @@ export default function Members() {
     <div>
       <h2>{t('members')}</h2>
 
-      {/* CREATE MEMBER FORM */}
       <form className="card" onSubmit={create}>
         <h3>Register member (officer)</h3>
-        
         <div style={{ marginBottom: '10px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#555' }}>
-            Profile Picture (Optional)
-          </label>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#555' }}>Profile Picture (Optional)</label>
           <input id="memberPicInput" type="file" accept="image/*" onChange={onFileChange} style={{ padding: '5px' }} />
         </div>
 
@@ -116,38 +124,28 @@ export default function Members() {
         <input name="password" type="password" placeholder={t('password')} value={form.password} onChange={onChange} required />
         
         <select name="role" value={form.role} onChange={onChange}>
-          <option value="member">member</option>
-          {user.role !== 'wardOfficer' && <option value="wardOfficer">wardOfficer</option>}
-          {['lgaOfficer', 'stateAdmin'].includes(user.role) && <option value="lgaOfficer">lgaOfficer</option>}
-          {user.role === 'stateAdmin' && <option value="stateAdmin">stateAdmin</option>}
+          <option value="member">Member (Lowest Rank)</option>
+          {user.role !== 'wardOfficer' && <option value="wardOfficer">Ward Officer</option>}
+          {['lgaOfficer', 'stateAdmin'].includes(user.role) && <option value="lgaOfficer">LGA Officer</option>}
+          {user.role === 'stateAdmin' && <option value="stateAdmin">State Admin</option>}
         </select>
         
         {msg && <p className="ok">{msg}</p>}
-        <button className="btn" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : t('submit')}
-        </button>
+        <button className="btn" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : t('submit')}</button>
       </form>
 
       <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid #eee' }} />
 
-      {/* 👇 NEW: SEARCH & FILTER CONTROLS */}
+      {/* SEARCH & FILTER */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <input 
-          type="text" 
-          placeholder="🔍 Search by name or email..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ flex: '1', minWidth: '200px', padding: '10px' }}
-        />
-        
+        <input type="text" placeholder="🔍 Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: '1', minWidth: '200px', padding: '10px' }} />
         <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={{ padding: '10px' }}>
-          <option value="all">All Roles</option>
-          <option value="member">Member</option>
-          <option value="wardOfficer">Ward Officer</option>
-          <option value="lgaOfficer">LGA Officer</option>
+          <option value="all">All Ranks</option>
           <option value="stateAdmin">State Admin</option>
+          <option value="lgaOfficer">LGA Officer</option>
+          <option value="wardOfficer">Ward Officer</option>
+          <option value="member">Member</option>
         </select>
-
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '10px' }}>
           <option value="all">All Statuses</option>
           <option value="approved">Approved (✅)</option>
@@ -155,21 +153,18 @@ export default function Members() {
         </select>
       </div>
 
-      <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
-        Showing {filteredUsers.length} of {users.length} members
-      </p>
-
-      {/* MEMBERS TABLE */}
       <table className="table">
         <thead>
           <tr>
-            <th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th>
+            <th>Name</th><th>Email</th><th>Rank / Role</th><th>Status</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {filteredUsers.map((u) => {
             const isSelf = u._id === user.id;
             const canManage = user.role === 'stateAdmin' && !isSelf;
+            const isTopRank = u.role === 'stateAdmin';
+            const isBottomRank = u.role === 'member';
 
             return (
               <tr key={u._id}>
@@ -186,21 +181,32 @@ export default function Members() {
                 
                 <td>{u.email}</td>
                 
+                {/* 👇 NEW RANK MANAGEMENT UI */}
                 <td>
-                  {canManage ? (
-                    <select 
-                      value={u.role} 
-                      onChange={(e) => updateRole(u._id, e.target.value)}
-                      style={{ padding: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
-                    >
-                      <option value="member">member</option>
-                      <option value="wardOfficer">wardOfficer</option>
-                      <option value="lgaOfficer">lgaOfficer</option>
-                      <option value="stateAdmin">stateAdmin</option>
-                    </select>
-                  ) : (
-                    <span style={{ textTransform: 'capitalize' }}>{u.role}</span>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {getRoleBadge(u.role)}
+                    
+                    {canManage && (
+                      <div style={{ display: 'flex', gap: '2px' }}>
+                        <button 
+                          disabled={isTopRank}
+                          onClick={() => handleRankChange(u._id, u.role, 'promote')}
+                          title="Promote Rank"
+                          style={{ padding: '2px 6px', cursor: isTopRank ? 'not-allowed' : 'pointer', opacity: isTopRank ? 0.3 : 1, border: '1px solid #ccc', background: '#fff', borderRadius: '4px' }}
+                        >
+                          ⬆️
+                        </button>
+                        <button 
+                          disabled={isBottomRank}
+                          onClick={() => handleRankChange(u._id, u.role, 'demote')}
+                          title="Demote Rank"
+                          style={{ padding: '2px 6px', cursor: isBottomRank ? 'not-allowed' : 'pointer', opacity: isBottomRank ? 0.3 : 1, border: '1px solid #ccc', background: '#fff', borderRadius: '4px' }}
+                        >
+                          ⬇️
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </td>
 
                 <td>{u.isApproved ? '✅' : '⏳'}</td>
@@ -224,12 +230,9 @@ export default function Members() {
               </tr>
             );
           })}
-          
           {filteredUsers.length === 0 && (
             <tr>
-              <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                No members found matching your search.
-              </td>
+              <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>No members found matching your search.</td>
             </tr>
           )}
         </tbody>
