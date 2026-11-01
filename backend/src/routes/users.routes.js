@@ -37,17 +37,11 @@ router.get('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin
 // Officer creates a member (auto-approved)
 router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin'), upload.single('profilePicture'), async (req, res, next) => {
   try {
-    // 🚨 DEBUGGING LOGS: Check your Render Logs to see if this is empty
-    console.log("--- NEW MEMBER REQUEST ---");
-    console.log("Body:", req.body);
-    console.log("File:", req.file);
-
-    const { fullName, email, password, phone, role = 'member', state, lga, ward } = req.body;
+    // 👇 Added rank = 'Member' to the destructuring
+    const { fullName, email, password, phone, role = 'member', rank = 'Member', state, lga, ward } = req.body;
     
-    // Extract image URL from Cloudinary
     const profilePicture = req.file ? req.file.path : '';
 
-    // Fallback check to catch the exact missing field
     if (!fullName || !email || !password) {
       return res.status(400).json({ 
         message: 'Validation failed: fullName, email, and password are required.',
@@ -55,7 +49,6 @@ router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmi
       });
     }
 
-    // Officer cannot create a role above their own level
     const roleRank = { member: 0, wardOfficer: 1, lgaOfficer: 2, stateAdmin: 3 };
     if (roleRank[role] > roleRank[req.user.role])
       return res.status(403).json({ message: 'Cannot create higher role' });
@@ -66,7 +59,7 @@ router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmi
       password,
       phone,
       role,
-      rank,
+      rank, // 👈 Now this is safely defined
       state: state || req.user.state,
       lga: lga || req.user.lga,
       ward: ward || req.user.ward,
@@ -113,6 +106,22 @@ router.patch('/:id/role', authenticate, authorize('stateAdmin'), async (req, res
   }
 });
 
+// 👇 NEW: Update Organizational Rank (stateAdmin only)
+router.patch('/:id/rank', authenticate, authorize('stateAdmin'), async (req, res, next) => {
+  try {
+    const { rank } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { rank },
+      { new: true, select: '-password' }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Toggle active (stateAdmin)
 router.patch('/:id/active', authenticate, authorize('stateAdmin'), async (req, res, next) => {
   try {
@@ -129,7 +138,6 @@ router.patch('/:id/active', authenticate, authorize('stateAdmin'), async (req, r
 // Remove a member (stateAdmin only)
 router.delete('/:id', authenticate, authorize('stateAdmin'), async (req, res, next) => {
   try {
-    // Prevent the admin from deleting themselves
     if (req.params.id === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot remove your own account' });
     }
@@ -148,27 +156,10 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-   //ranks
-    router.patch('/:id/rank', authenticate, authorize('stateAdmin'), async (req, res, next) => {
-  try {
-    const { rank } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { rank },
-      { new: true, select: '-password' }
-    );
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
-  } catch (err) {
-    next(err);
-  }
-});
-    // Update allowed fields
+
     if (req.body.fullName) user.fullName = req.body.fullName;
     if (req.body.phone !== undefined) user.phone = req.body.phone;
     if (req.body.password) user.password = req.body.password; 
-    
-    // Update image if a new one was uploaded
     if (req.file) user.profilePicture = req.file.path;
 
     const updatedUser = await user.save();
@@ -180,6 +171,7 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
         fullName: updatedUser.fullName,
         email: updatedUser.email,
         role: updatedUser.role,
+        rank: updatedUser.rank, // 👈 Added rank to the response
         state: updatedUser.state,
         lga: updatedUser.lga,
         ward: updatedUser.ward,
@@ -191,4 +183,5 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
     next(err);
   }
 });
+
 export default router;
