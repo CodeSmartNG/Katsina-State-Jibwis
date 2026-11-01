@@ -10,7 +10,7 @@ import userRoutes from './routes/users.routes.js';
 import announcementRoutes from './routes/announcements.routes.js';
 import activityRoutes from './routes/activities.routes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
-
+import leaderRoutes from './routes/leaders.routes.js';
 const app = express();
 
 // 1. TRUST RENDER'S PROXY (Fixes the rate-limit crash)
@@ -30,6 +30,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/activities', activityRoutes);
+app.use('/api/leaders', leaderRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
