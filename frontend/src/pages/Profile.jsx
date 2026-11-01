@@ -7,10 +7,13 @@ export default function Profile() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   
+  // 👇 SAFETY CHECK: Prevent crash if user data is still loading
+  if (!user) return <div className="container">Loading profile...</div>;
+
   const [form, setForm] = useState({
     fullName: user.fullName || '',
     phone: user.phone || '',
-    password: '', // Empty by default
+    password: '',
   });
   const [profilePicture, setProfilePicture] = useState(null);
   const [msg, setMsg] = useState('');
@@ -29,19 +32,18 @@ export default function Profile() {
       const formData = new FormData();
       formData.append('fullName', form.fullName);
       formData.append('phone', form.phone);
-      if (form.password) formData.append('password', form.password); // Only send if typed
+      if (form.password) formData.append('password', form.password);
       if (profilePicture) formData.append('profilePicture', profilePicture);
 
       const { data } = await api.put('/users/profile', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      updateUser(data.user); // Update global state (updates Navbar instantly)
+      updateUser(data.user);
       setMsg('Profile updated successfully!');
-      setForm({ ...form, password: '' }); // Clear password field
+      setForm({ ...form, password: '' });
       setProfilePicture(null);
       
-      // Optional: Navigate back to dashboard after 1.5 seconds
       setTimeout(() => navigate('/dashboard'), 1500);
 
     } catch (e) {
@@ -60,7 +62,6 @@ export default function Profile() {
 
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         
-        {/* Current Image Display */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {user.profilePicture ? (
             <img src={user.profilePicture} alt="Profile" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover' }} />
