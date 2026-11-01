@@ -33,12 +33,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // 👇 NEW FUNCTION ADDED HERE
+  const updateUser = (newUserData) => {
+    setUser(newUserData);
+  };
+
   const value = {
     user,
     loading,
     login,
     logout,
-    updateUser,
+    updateUser, // Now this is safely defined
     isOfficer: user && ['wardOfficer', 'lgaOfficer', 'stateAdmin'].includes(user.role),
   };
 
