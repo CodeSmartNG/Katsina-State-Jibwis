@@ -74,7 +74,6 @@ export default function Members() {
     }
   };
 
-  // 👇 NEW: Promote/Demote Logic
   const handleRankChange = (id, currentRole, action) => {
     const ranks = ['member', 'wardOfficer', 'lgaOfficer', 'stateAdmin'];
     const currentIndex = ranks.indexOf(currentRole);
@@ -86,7 +85,6 @@ export default function Members() {
     }
   };
 
-  // 👇 NEW: Visual Rank Badges
   const getRoleBadge = (role) => {
     switch(role) {
       case 'stateAdmin': return <span style={{background: '#fef2f2', color: '#ef4444', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.8rem'}}>State Admin</span>;
@@ -107,6 +105,42 @@ export default function Members() {
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, searchTerm, filterRole, filterStatus]);
+
+  // 👇 NEW: EXPORT TO CSV FUNCTION
+  const exportToCSV = () => {
+    if (filteredUsers.length === 0) return alert('No members to export.');
+
+    // Define CSV Headers
+    const headers = ['Name', 'Email', 'Phone', 'Role', 'State', 'LGA', 'Ward', 'Status'];
+    
+    // Map through users and create rows
+    const csvRows = filteredUsers.map(u => {
+      // Wrap fields in quotes to prevent commas in names/emails from breaking the CSV
+      return [
+        `"${u.fullName || ''}"`,
+        `"${u.email || ''}"`,
+        `"${u.phone || ''}"`,
+        `"${u.role || ''}"`,
+        `"${u.state || ''}"`,
+        `"${u.lga || ''}"`,
+        `"${u.ward || ''}"`,
+        `"${u.isApproved ? 'Approved' : 'Pending'}"`
+      ].join(',');
+    });
+
+    // Combine headers and rows
+    const csvContent = [headers.join(','), ...csvRows].join('\n');
+    
+    // Create a Blob and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `JIBWIS_Members_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div>
@@ -136,7 +170,7 @@ export default function Members() {
 
       <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid #eee' }} />
 
-      {/* SEARCH & FILTER */}
+      {/* SEARCH, FILTER & EXPORT */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <input type="text" placeholder="🔍 Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: '1', minWidth: '200px', padding: '10px' }} />
         <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={{ padding: '10px' }}>
@@ -151,9 +185,21 @@ export default function Members() {
           <option value="approved">Approved (✅)</option>
           <option value="pending">Pending (⏳)</option>
         </select>
+        
+        {/* 👇 EXPORT BUTTON */}
+        <button 
+          onClick={exportToCSV} 
+          className="btn" 
+          style={{ backgroundColor: '#10b981', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          ⬇️ Export CSV
+        </button>
       </div>
 
+      <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>Showing {filteredUsers.length} of {users.length} members</p>
+
       <table className="table">
+        {/* ... (Your existing table code remains exactly the same) ... */}
         <thead>
           <tr>
             <th>Name</th><th>Email</th><th>Rank / Role</th><th>Status</th><th>Actions</th>
@@ -181,29 +227,13 @@ export default function Members() {
                 
                 <td>{u.email}</td>
                 
-                {/* 👇 NEW RANK MANAGEMENT UI */}
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {getRoleBadge(u.role)}
-                    
                     {canManage && (
                       <div style={{ display: 'flex', gap: '2px' }}>
-                        <button 
-                          disabled={isTopRank}
-                          onClick={() => handleRankChange(u._id, u.role, 'promote')}
-                          title="Promote Rank"
-                          style={{ padding: '2px 6px', cursor: isTopRank ? 'not-allowed' : 'pointer', opacity: isTopRank ? 0.3 : 1, border: '1px solid #ccc', background: '#fff', borderRadius: '4px' }}
-                        >
-                          ⬆️
-                        </button>
-                        <button 
-                          disabled={isBottomRank}
-                          onClick={() => handleRankChange(u._id, u.role, 'demote')}
-                          title="Demote Rank"
-                          style={{ padding: '2px 6px', cursor: isBottomRank ? 'not-allowed' : 'pointer', opacity: isBottomRank ? 0.3 : 1, border: '1px solid #ccc', background: '#fff', borderRadius: '4px' }}
-                        >
-                          ⬇️
-                        </button>
+                        <button disabled={isTopRank} onClick={() => handleRankChange(u._id, u.role, 'promote')} title="Promote Rank" style={{ padding: '2px 6px', cursor: isTopRank ? 'not-allowed' : 'pointer', opacity: isTopRank ? 0.3 : 1, border: '1px solid #ccc', background: '#fff', borderRadius: '4px' }}>⬆️</button>
+                        <button disabled={isBottomRank} onClick={() => handleRankChange(u._id, u.role, 'demote')} title="Demote Rank" style={{ padding: '2px 6px', cursor: isBottomRank ? 'not-allowed' : 'pointer', opacity: isBottomRank ? 0.3 : 1, border: '1px solid #ccc', background: '#fff', borderRadius: '4px' }}>⬇️</button>
                       </div>
                     )}
                   </div>
@@ -213,18 +243,10 @@ export default function Members() {
                 
                 <td style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {!u.isApproved && (
-                    <button className="btn btn-sm" onClick={() => approve(u._id)}>
-                      {t('approve')}
-                    </button>
+                    <button className="btn btn-sm" onClick={() => approve(u._id)}>{t('approve')}</button>
                   )}
                   {canManage && (
-                    <button 
-                      className="btn btn-sm" 
-                      style={{ backgroundColor: '#ef4444', color: 'white' }}
-                      onClick={() => removeMember(u._id, u.fullName)}
-                    >
-                      Remove
-                    </button>
+                    <button className="btn btn-sm" style={{ backgroundColor: '#ef4444', color: 'white' }} onClick={() => removeMember(u._id, u.fullName)}>Remove</button>
                   )}
                 </td>
               </tr>
