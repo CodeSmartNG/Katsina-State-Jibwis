@@ -66,6 +66,7 @@ router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmi
       password,
       phone,
       role,
+      rank,
       state: state || req.user.state,
       lga: lga || req.user.lga,
       ward: ward || req.user.ward,
@@ -147,7 +148,21 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-
+   //ranks
+    router.patch('/:id/rank', authenticate, authorize('stateAdmin'), async (req, res, next) => {
+  try {
+    const { rank } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { rank },
+      { new: true, select: '-password' }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
     // Update allowed fields
     if (req.body.fullName) user.fullName = req.body.fullName;
     if (req.body.phone !== undefined) user.phone = req.body.phone;
