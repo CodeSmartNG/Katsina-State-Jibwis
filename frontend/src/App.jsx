@@ -10,7 +10,6 @@ import Activities from './pages/Activities.jsx';
 import Members from './pages/Members.jsx';
 import Profile from './pages/Profile.jsx'; 
 
-
 export default function App() {
   return (
     <>
@@ -22,6 +21,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/activities" element={<Activities />} />
+          
           <Route
             path="/dashboard"
             element={
@@ -30,6 +30,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          
           <Route
             path="/members"
             element={
@@ -39,15 +40,14 @@ export default function App() {
             }
           />
 
-          
-<Route
-  path="/profile"
-  element={
-    <ProtectedRoute>
-      <Profile />
-    </ProtectedRoute>
-  }
-/>
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </>
