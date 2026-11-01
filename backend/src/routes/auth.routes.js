@@ -3,7 +3,7 @@ import { z } from 'zod';
 import User from '../models/User.js';
 import { signToken } from '../utils/token.js';
 import { authenticate } from '../middleware/auth.js';
-import { upload } from '../config/cloudinary.js'; // 👈 Import Cloudinary upload
+import { upload } from '../config/cloudinary.js';
 
 const router = Router();
 
@@ -15,17 +15,15 @@ const registerSchema = z.object({
   state: z.string().optional().or(z.literal('')),
   lga: z.string().optional().or(z.literal('')),
   ward: z.string().optional().or(z.literal('')),
+  rank: z.string().optional().or(z.literal('')), // 👈 Added rank validation
   profilePicture: z.string().optional(),
 });
 
 // Public self-registration — creates a member awaiting approval
-// 👇 Added upload.single('profilePicture')
 router.post('/register', upload.single('profilePicture'), async (req, res, next) => {
   try {
-    // If a file was uploaded, req.file.path holds the Cloudinary URL
     const profilePicture = req.file ? req.file.path : '';
 
-    // Parse the form data (req.body) along with the image URL
     const data = registerSchema.parse({
       ...req.body,
       profilePicture,
@@ -34,7 +32,13 @@ router.post('/register', upload.single('profilePicture'), async (req, res, next)
     const exists = await User.findOne({ email: data.email });
     if (exists) return res.status(409).json({ message: 'Email already registered' });
 
-    const user = await User.create({ ...data, role: 'member', isApproved: false });
+    // 👈 Added rank fallback to 'Member' if left empty
+    const user = await User.create({ 
+      ...data, 
+      role: 'member', 
+      rank: data.rank || 'Member', 
+      isApproved: false 
+    });
     
     res.status(201).json({
       message: 'Registration submitted. Await approval by an officer.',
@@ -66,10 +70,11 @@ router.post('/login', async (req, res, next) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        rank: user.rank, // 👈 Added rank
         state: user.state,
         lga: user.lga,
         ward: user.ward,
-        profilePicture: user.profilePicture, // 👈 Added this
+        profilePicture: user.profilePicture,
       },
     });
   } catch (err) {
@@ -84,10 +89,11 @@ router.get('/me', authenticate, (req, res) => {
     fullName: u.fullName,
     email: u.email,
     role: u.role,
+    rank: u.rank, // 👈 Added rank
     state: u.state,
     lga: u.lga,
     ward: u.ward,
-    profilePicture: u.profilePicture, // 👈 Added this
+    profilePicture: u.profilePicture,
   });
 });
 
