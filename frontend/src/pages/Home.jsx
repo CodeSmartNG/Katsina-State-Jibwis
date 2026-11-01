@@ -16,6 +16,11 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [msg, setMsg] = useState('');
 
+  // 👇 New states for Editing
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+
   const fetchLeaders = () => {
     api.get('/leaders').then((res) => setLeaders(res.data)).catch(console.error);
   };
@@ -52,9 +57,20 @@ export default function Home() {
   };
 
   const deleteLeader = async (id) => {
-    if(!window.confirm("Remove this leader?")) return;
+    if(!window.confirm("Are you sure you want to remove this leader?")) return;
     await api.delete(`/leaders/${id}`);
     fetchLeaders();
+  };
+
+  // 👇 New function to save the edit
+  const saveEdit = async (id) => {
+    try {
+      await api.put(`/leaders/${id}`, { name: editName, title: editTitle });
+      setEditingId(null); // Close the edit mode
+      fetchLeaders();     // Refresh the list
+    } catch (err) {
+      alert('Failed to update leader');
+    }
   };
 
   // Duplicate the array to make the infinite scroll seamless
@@ -82,14 +98,53 @@ export default function Home() {
             <div className="marquee-content">
               {carouselLeaders.map((leader, index) => (
                 <div className="leader-card" key={`${leader._id}-${index}`}>
-                  <img src={leader.imageUrl} alt={leader.name} />
-                  <div className="leader-info">
-                    <h3>{leader.name}</h3>
-                    <p>{leader.title}</p>
-                    {user?.role === 'stateAdmin' && (
-                      <button className="delete-btn" onClick={() => deleteLeader(leader._id)}>✕</button>
-                    )}
-                  </div>
+                  
+                  {/* If we are editing THIS card, show the edit form instead of the image */}
+                  {editingId === leader._id ? (
+                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
+                      <h4 style={{ margin: 0 }}>Edit Leader</h4>
+                      <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" style={{ width: '100%', padding: '8px' }} />
+                      <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" style={{ width: '100%', padding: '8px' }} />
+                      <div style={{ display: 'flex', gap: '5px', marginTop: 'auto' }}>
+                        <button className="btn btn-sm" onClick={() => saveEdit(leader._id)} style={{ flex: 1 }}>Save</button>
+                        <button className="btn btn-sm btn-outline" onClick={() => setEditingId(null)} style={{ flex: 1 }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Normal View */
+                    <>
+                      <img src={leader.imageUrl} alt={leader.name} />
+                      <div className="leader-info">
+                        <h3>{leader.name}</h3>
+                        <p>{leader.title}</p>
+                        
+                        {/* 👇 Always-Visible Admin Buttons */}
+                        {user?.role === 'stateAdmin' && (
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'center' }}>
+                            <button 
+                              className="btn btn-sm" 
+                              style={{ backgroundColor: '#3b82f6', color: 'white', padding: '5px 15px' }}
+                              onClick={() => {
+                                setEditingId(leader._id);
+                                setEditName(leader.name);
+                                setEditTitle(leader.title);
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              className="btn btn-sm" 
+                              style={{ backgroundColor: '#ef4444', color: 'white', padding: '5px 15px' }}
+                              onClick={() => deleteLeader(leader._id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
                 </div>
               ))}
             </div>
@@ -102,7 +157,7 @@ export default function Home() {
         <div className="admin-upload-section card">
           <h3>Admin: Add Leader Picture</h3>
           <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '15px' }}>
-            Add 3-4 pictures to display them in the moving carousel.
+            Add pictures to display them in the moving carousel.
           </p>
           <form onSubmit={handleUpload} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <input type="text" placeholder="Leader Name" value={name} onChange={(e) => setName(e.target.value)} required style={{ flex: 1 }} />
