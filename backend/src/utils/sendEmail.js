@@ -1,21 +1,36 @@
-import { BrevoClient } from '@getbrevo/brevo';
-
 export const sendEmail = async (options) => {
   try {
-    const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
-
-    const result = await brevo.transactionalEmails.sendTransacEmail({
-      subject: options.subject,
-      htmlContent: options.message,
-      sender: { name: 'JIBWIS Portal', email: process.env.EMAIL_USER },
-      to: [{ email: options.email }],
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { 
+          name: 'JIBWIS Portal', 
+          email: process.env.EMAIL_USER 
+        },
+        to: [{ email: options.email }],
+        subject: options.subject,
+        htmlContent: options.message,
+      }),
     });
 
-    console.log('✅ Brevo email sent successfully:', result.messageId);
-    return result;
+    const data = await response.json();
+
+    if (!response.ok) {
+      // 👇 This will print the EXACT error from Brevo to your Render logs
+      console.error('🚨 BREVO API ERROR:', data);
+      throw new Error(data.message || 'Brevo API failed');
+    }
+
+    console.log('✅ Email sent successfully via Brevo!');
+    return data;
+
   } catch (error) {
-    // 👇 This will log the exact reason Brevo rejected the email
-    console.error('🚨 BREVO ERROR:', error);
+    console.error('🚨 SEND EMAIL FAILED:', error.message);
     throw error;
   }
 };
