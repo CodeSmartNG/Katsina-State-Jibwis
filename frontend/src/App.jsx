@@ -9,6 +9,10 @@ import Announcements from './pages/Announcements.jsx';
 import Activities from './pages/Activities.jsx';
 import Members from './pages/Members.jsx';
 import Profile from './pages/Profile.jsx'; 
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
+
+
 
 export default function App() {
   return (
@@ -21,6 +25,8 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/activities" element={<Activities />} />
+         <Route path="/forgot-password" element={<ForgotPassword />} />
+         <Route path="/reset-password/:token" element={<ResetPassword />} />
           
           <Route
             path="/dashboard"
