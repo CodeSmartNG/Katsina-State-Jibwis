@@ -1,7 +1,19 @@
 export const sendSms = async ({ to, message }) => {
   try {
-    // Ensure all phone numbers are strings and properly formatted for Termii
-    const formattedTo = to.map(num => String(num).trim());
+    // 🛡️ SAFEGUARD: Force format to 234XXXXXXXXXX and remove invalid numbers
+    const validNumbers = to
+      .map(num => {
+        let p = String(num).replace(/\D/g, ''); // Remove all non-digits
+        if (p.startsWith('0')) p = '234' + p.slice(1); // Convert 080... to 23480...
+        return p;
+      })
+      .filter(p => p.length === 13); // Termii ONLY accepts 13-digit Nigerian numbers
+
+    // If no valid numbers remain, don't bother calling the API
+    if (validNumbers.length === 0) {
+      console.log('⚠️ TERMII: No valid 13-digit phone numbers to send to.');
+      return;
+    }
 
     const response = await fetch('https://api.ng.termii.com/api/sms/send/bulk', {
       method: 'POST',
@@ -10,7 +22,7 @@ export const sendSms = async ({ to, message }) => {
       },
       body: JSON.stringify({
         api_key: process.env.TERMII_API_KEY,
-        to: formattedTo, // Must be an array of strings
+        to: validNumbers, // 👈 Using the strictly filtered array
         from: process.env.TERMII_SENDER_ID,
         sms: message,
         type: 'plain',
