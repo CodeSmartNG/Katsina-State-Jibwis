@@ -198,19 +198,6 @@ router.post('/reset-password/:token', async (req, res, next) => {
   }
 });
 
-// 🚨 3. EMERGENCY ROUTE - REMOVE AFTER USE
-router.get('/emergency-fix-admin', async (req, res) => {
-  try {
-    const user = await User.findOne({ email: 'kabiralkasim6@gmail.com' });
-    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.password = 'Password123'; 
-    await user.save();
-
-    res.json({ message: '✅ Password reset to Password123 successfully!' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 
 export default router;
