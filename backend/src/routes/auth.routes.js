@@ -56,8 +56,6 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const cleanEmail = email.trim().toLowerCase();
-    
-    // 👈 Trim the password here too, so it matches the reset route
     const cleanPassword = password.trim();
 
     const user = await User.findOne({ email: cleanEmail }).select('+password');
@@ -70,7 +68,6 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // 👈 Use the trimmed password
     const isMatch = await user.comparePassword(cleanPassword);
     if (!isMatch) {
       console.log("🚨 Password does not match.");
@@ -81,7 +78,22 @@ router.post('/login', async (req, res, next) => {
 
     console.log("✅ Login successful!");
     const token = signToken(user);
-    res.json({ /* ... user data ... */ });
+    
+    // 👇 RESTORED THE USER DATA HERE
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        rank: user.rank,
+        state: user.state,
+        lga: user.lga,
+        ward: user.ward,
+        profilePicture: user.profilePicture,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -105,7 +117,7 @@ router.get('/me', authenticate, (req, res) => {
 // 1. Forgot Password - Send Email
 router.post('/forgot-password', async (req, res, next) => {
   try {
-    const cleanEmail = req.body.email.trim().toLowerCase(); // 👈 Added clean email
+    const cleanEmail = req.body.email.trim().toLowerCase();
     const user = await User.findOne({ email: cleanEmail });
     
     if (!user) {
@@ -153,7 +165,7 @@ router.post('/forgot-password', async (req, res, next) => {
   }
 });
 
-// 2. Reset Password - Verify Token & Save New Password
+// 2. Reset Password
 router.post('/reset-password/:token', async (req, res, next) => {
   try {
     const resetPasswordToken = crypto
@@ -174,7 +186,6 @@ router.post('/reset-password/:token', async (req, res, next) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    // 👈 FIX: Trim the password to remove accidental leading/trailing spaces
     user.password = req.body.password.trim(); 
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
@@ -184,6 +195,21 @@ router.post('/reset-password/:token', async (req, res, next) => {
     res.status(200).json({ message: 'Password reset successfully' });
   } catch (err) {
     next(err);
+  }
+});
+
+// 🚨 3. EMERGENCY ROUTE - REMOVE AFTER USE
+router.get('/emergency-fix-admin', async (req, res) => {
+  try {
+    const user = await User.findOne({ email: 'kabiralkasim6@gmail.com' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.password = 'Password123'; 
+    await user.save();
+
+    res.json({ message: '✅ Password reset to Password123 successfully!' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
