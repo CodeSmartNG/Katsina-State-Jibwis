@@ -99,4 +99,92 @@ router.get('/me', authenticate, (req, res) => {
   });
 });
 
+// 1. Forgot Password - Send Email
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).json({ message: 'There is no user with that email address.' });
+    }
+
+    // Generate a random 20-byte hex token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // Hash token and set to resetPasswordToken field
+    user.resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Set expire time (15 minutes)
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save();
+
+    // Create reset URL (Point this to your Vercel frontend)
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    const message = `
+      <h2>Password Reset Request</h2>
+      <p>You requested a password reset for your JIBWIS Portal account.</p>
+      <p>Please click the link below to reset your password. This link is valid for 15 minutes.</p>
+      <a href="${resetUrl}" style="padding: 10px 20px; background: #0d9488; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'JIBWIS Portal - Password Reset Request',
+        message,
+      });
+
+      res.status(200).json({ message: 'Email sent successfully' });
+    } catch (err) {
+      // If email fails, clear the token from the DB
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+      return res.status(500).json({ message: 'Email could not be sent' });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 2. Reset Password - Verify Token & Save New Password
+router.post('/reset-password/:token', async (req, res, next) => {
+  try {
+    // Hash the token from the URL to match the DB
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    // Find user with the token and ensure it hasn't expired
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    if (req.body.password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    // Set new password (the pre('save') hook in User.js will hash it automatically)
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
 export default router;
