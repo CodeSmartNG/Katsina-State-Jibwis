@@ -4,6 +4,8 @@ import User from '../models/User.js';
 import { signToken } from '../utils/token.js';
 import { authenticate } from '../middleware/auth.js';
 import { upload } from '../config/cloudinary.js';
+import crypto from 'crypto';
+import { sendEmail } from '../utils/sendEmail.js';
 
 const router = Router();
 
