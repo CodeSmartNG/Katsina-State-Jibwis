@@ -1,12 +1,14 @@
 import nodemailer from 'nodemailer';
 
 export const sendEmail = async (options) => {
-  // Create a transporter using SMTP
+  // 👇 Changed to explicit Host and Port for Render compatibility
   const transporter = nodemailer.createTransport({
-    service: 'Gmail', // or your email provider
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // This must be an App Password, not your real password
+      pass: process.env.EMAIL_PASS, // MUST be a 16-character App Password
     },
   });
 
