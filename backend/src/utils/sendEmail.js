@@ -1,15 +1,19 @@
 import nodemailer from 'nodemailer';
 
 export const sendEmail = async (options) => {
-  // 👇 Changed to explicit Host and Port for Render compatibility
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // true for 465, false for other ports
+    secure: true, // Use SSL
+    family: 4,    // 👈 THIS IS THE MAGIC FIX: Forces IPv4 to prevent Render timeouts
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // MUST be a 16-character App Password
+      pass: process.env.EMAIL_PASS, // Must be a 16-character App Password
     },
+    // Fail after 10 seconds instead of hanging forever
+    connectionTimeout: 10000, 
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
   });
 
   const mailOptions = {
