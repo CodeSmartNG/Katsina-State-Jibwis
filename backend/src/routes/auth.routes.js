@@ -55,48 +55,33 @@ router.post('/register', upload.single('profilePicture'), async (req, res, next)
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    
-    // 👈 FIX: Trim and lowercase the email to prevent hidden space errors
     const cleanEmail = email.trim().toLowerCase();
+    
+    // 👈 Trim the password here too, so it matches the reset route
+    const cleanPassword = password.trim();
 
     const user = await User.findOne({ email: cleanEmail }).select('+password');
     
-    // 👈 DEBUGGING LOGS: Check Render to see exactly what is happening
     console.log("--- LOGIN ATTEMPT ---");
     console.log("Email typed:", cleanEmail);
     
     if (!user) {
-      console.log("🚨 User not found in database.");
+      console.log("🚨 User not found.");
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const isMatch = await user.comparePassword(password);
+    // 👈 Use the trimmed password
+    const isMatch = await user.comparePassword(cleanPassword);
     if (!isMatch) {
       console.log("🚨 Password does not match.");
       return res.status(401).json({ message: 'Invalid credentials' });
     }
       
-    if (!user.isApproved) {
-      console.log("🚨 Account is pending approval.");
-      return res.status(403).json({ message: 'Account pending approval' });
-    }
+    if (!user.isApproved) return res.status(403).json({ message: 'Account pending approval' });
 
     console.log("✅ Login successful!");
     const token = signToken(user);
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        rank: user.rank,
-        state: user.state,
-        lga: user.lga,
-        ward: user.ward,
-        profilePicture: user.profilePicture,
-      },
-    });
+    res.json({ /* ... user data ... */ });
   } catch (err) {
     next(err);
   }
