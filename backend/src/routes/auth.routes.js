@@ -17,11 +17,11 @@ const registerSchema = z.object({
   state: z.string().optional().or(z.literal('')),
   lga: z.string().optional().or(z.literal('')),
   ward: z.string().optional().or(z.literal('')),
-  rank: z.string().optional().or(z.literal('')), // 👈 Added rank validation
+  rank: z.string().optional().or(z.literal('')),
   profilePicture: z.string().optional(),
 });
 
-// Public self-registration — creates a member awaiting approval
+// Public self-registration
 router.post('/register', upload.single('profilePicture'), async (req, res, next) => {
   try {
     const profilePicture = req.file ? req.file.path : '';
@@ -34,7 +34,6 @@ router.post('/register', upload.single('profilePicture'), async (req, res, next)
     const exists = await User.findOne({ email: data.email });
     if (exists) return res.status(409).json({ message: 'Email already registered' });
 
-    // 👈 Added rank fallback to 'Member' if left empty
     const user = await User.create({ 
       ...data, 
       role: 'member', 
@@ -72,7 +71,7 @@ router.post('/login', async (req, res, next) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
-        rank: user.rank, // 👈 Added rank
+        rank: user.rank,
         state: user.state,
         lga: user.lga,
         ward: user.ward,
@@ -91,7 +90,7 @@ router.get('/me', authenticate, (req, res) => {
     fullName: u.fullName,
     email: u.email,
     role: u.role,
-    rank: u.rank, // 👈 Added rank
+    rank: u.rank,
     state: u.state,
     lga: u.lga,
     ward: u.ward,
@@ -107,21 +106,17 @@ router.post('/forgot-password', async (req, res, next) => {
       return res.status(404).json({ message: 'There is no user with that email address.' });
     }
 
-    // Generate a random 20-byte hex token
     const resetToken = crypto.randomBytes(20).toString('hex');
 
-    // Hash token and set to resetPasswordToken field
     user.resetPasswordToken = crypto
       .createHash('sha256')
       .update(resetToken)
       .digest('hex');
 
-    // Set expire time (15 minutes)
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
 
     await user.save();
 
-    // Create reset URL (Point this to your Vercel frontend)
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     const message = `
@@ -141,7 +136,9 @@ router.post('/forgot-password', async (req, res, next) => {
 
       res.status(200).json({ message: 'Email sent successfully' });
     } catch (err) {
-      // If email fails, clear the token from the DB
+      // 👇 ADDED LOGGING HERE TO SHOW THE REAL ERROR
+      console.error("🚨 NODEMAILER ERROR:", err);
+
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
@@ -155,13 +152,11 @@ router.post('/forgot-password', async (req, res, next) => {
 // 2. Reset Password - Verify Token & Save New Password
 router.post('/reset-password/:token', async (req, res, next) => {
   try {
-    // Hash the token from the URL to match the DB
     const resetPasswordToken = crypto
       .createHash('sha256')
       .update(req.params.token)
       .digest('hex');
 
-    // Find user with the token and ensure it hasn't expired
     const user = await User.findOne({
       resetPasswordToken,
       resetPasswordExpires: { $gt: Date.now() },
@@ -175,7 +170,6 @@ router.post('/reset-password/:token', async (req, res, next) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    // Set new password (the pre('save') hook in User.js will hash it automatically)
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
