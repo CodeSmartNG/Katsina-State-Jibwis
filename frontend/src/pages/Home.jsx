@@ -29,8 +29,8 @@ export default function Home() {
 
   const fetchAnnouncements = () => {
     api.get('/announcements').then((res) => {
-      // Get only the top 3 most recent announcements
-      setRecentAnnouncements(res.data.slice(0, 3));
+      // Get the latest 6 announcements for the carousel
+      setRecentAnnouncements(res.data.slice(0, 6));
     }).catch(console.error);
   };
 
@@ -82,7 +82,9 @@ export default function Home() {
     }
   };
 
+  // Duplicate arrays to make the infinite scroll seamless
   const carouselLeaders = leaders.length > 0 ? [...leaders, ...leaders, ...leaders] : [];
+  const carouselAnnouncements = recentAnnouncements.length > 0 ? [...recentAnnouncements, ...recentAnnouncements, ...recentAnnouncements] : [];
 
   return (
     <div className="home-wrapper">
@@ -138,10 +140,10 @@ export default function Home() {
         )}
       </div>
 
-      {/* 👇 NEW: RECENT ANNOUNCEMENTS SECTION */}
-      <div className="recent-news-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px' }}>
-          <h2 style={{ margin: 0, color: '#065f46' }}>Recent Announcements</h2>
+      {/* 👇 NEW: ANNOUNCEMENTS CAROUSEL */}
+      <div className="carousel-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '10px', maxWidth: '1200px', margin: '0 auto 1.5rem auto', padding: '0 1rem' }}>
+          <h2 style={{ margin: 0, color: '#065f46' }}>Latest News & Announcements</h2>
           <Link to="/announcements" style={{ color: '#0d9488', fontWeight: 'bold', textDecoration: 'none' }}>
             View All →
           </Link>
@@ -150,19 +152,22 @@ export default function Home() {
         {recentAnnouncements.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#666' }}>No announcements posted yet.</p>
         ) : (
-          <div className="news-grid">
-            {recentAnnouncements.map((ann) => (
-              <div key={ann._id} className="news-card">
-                <div className="news-content">
-                  <h3>{lang === 'ha' && ann.titleHa ? ann.titleHa : ann.title}</h3>
-                  <p>{lang === 'ha' && ann.bodyHa ? ann.bodyHa : ann.body}</p>
+          <div className="marquee-container">
+            {/* Add a reverse animation class to make it scroll the opposite way of the leaders */}
+            <div className="marquee-content reverse-scroll">
+              {carouselAnnouncements.map((ann, index) => (
+                <div className="announcement-card" key={`${ann._id}-${index}`}>
+                  <div className="announcement-content">
+                    <h3>{lang === 'ha' && ann.titleHa ? ann.titleHa : ann.title}</h3>
+                    <p>{lang === 'ha' && ann.bodyHa ? ann.bodyHa : ann.body}</p>
+                  </div>
+                  <div className="announcement-footer">
+                    <span>📅 {new Date(ann.createdAt).toLocaleDateString()}</span>
+                    <span className="scope-badge">{ann.scope}</span>
+                  </div>
                 </div>
-                <div className="news-footer">
-                  <span>📅 {new Date(ann.createdAt).toLocaleDateString()}</span>
-                  <span className="scope-badge">{ann.scope}</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>
