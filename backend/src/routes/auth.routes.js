@@ -55,14 +55,33 @@ router.post('/register', upload.single('profilePicture'), async (req, res, next)
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select('+password');
     
-    if (!user || !(await user.comparePassword(password)))
-      return res.status(401).json({ message: 'Invalid credentials' });
-      
-    if (!user.isApproved)
-      return res.status(403).json({ message: 'Account pending approval' });
+    // 👈 FIX: Trim and lowercase the email to prevent hidden space errors
+    const cleanEmail = email.trim().toLowerCase();
 
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
+    
+    // 👈 DEBUGGING LOGS: Check Render to see exactly what is happening
+    console.log("--- LOGIN ATTEMPT ---");
+    console.log("Email typed:", cleanEmail);
+    
+    if (!user) {
+      console.log("🚨 User not found in database.");
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      console.log("🚨 Password does not match.");
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+      
+    if (!user.isApproved) {
+      console.log("🚨 Account is pending approval.");
+      return res.status(403).json({ message: 'Account pending approval' });
+    }
+
+    console.log("✅ Login successful!");
     const token = signToken(user);
     res.json({
       token,
@@ -101,7 +120,9 @@ router.get('/me', authenticate, (req, res) => {
 // 1. Forgot Password - Send Email
 router.post('/forgot-password', async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
+    const cleanEmail = req.body.email.trim().toLowerCase(); // 👈 Added clean email
+    const user = await User.findOne({ email: cleanEmail });
+    
     if (!user) {
       return res.status(404).json({ message: 'There is no user with that email address.' });
     }
@@ -136,9 +157,7 @@ router.post('/forgot-password', async (req, res, next) => {
 
       res.status(200).json({ message: 'Email sent successfully' });
     } catch (err) {
-      // 👇 ADDED LOGGING HERE TO SHOW THE REAL ERROR
-      console.error("🚨 NODEMAILER ERROR:", err);
-
+      console.error("🚨 BREVO ERROR:", err);
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
@@ -170,7 +189,8 @@ router.post('/reset-password/:token', async (req, res, next) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    user.password = req.body.password;
+    // 👈 FIX: Trim the password to remove accidental leading/trailing spaces
+    user.password = req.body.password.trim(); 
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
@@ -181,4 +201,5 @@ router.post('/reset-password/:token', async (req, res, next) => {
     next(err);
   }
 });
+
 export default router;
