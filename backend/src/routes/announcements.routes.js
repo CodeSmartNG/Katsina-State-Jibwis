@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import Announcement from '../models/Announcement.js';
+import User from '../models/User.js'; // 👈 Imported User model
 import { authenticate, authorize } from '../middleware/auth.js';
+import { sendSms } from '../utils/sendSms.js'; // 👈 Imported SMS utility
 
 const router = Router();
 
@@ -26,6 +28,7 @@ router.get('/', async (req, res, next) => {
 router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin'), async (req, res, next) => {
   try {
     const payload = { ...req.body, createdBy: req.user._id };
+    
     // Force scope for lower roles
     if (req.user.role === 'wardOfficer') {
       payload.scope = 'ward';
@@ -39,7 +42,47 @@ router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmi
     } else if (req.user.role === 'stateAdmin') {
       payload.state = payload.state ?? req.user.state;
     }
+
+    // 1. Save the Announcement
     const ann = await Announcement.create(payload);
+
+    // 2. Send SMS Notifications (Fire and forget)
+    // We don't use 'await' here so the API response isn't delayed by the SMS provider
+    const sendNotifications = async () => {
+      try {
+        // Find approved users with phone numbers based on the announcement scope
+        const filter = { isApproved: true, phone: { $exists: true, $ne: '' } };
+        if (ann.scope === 'state') filter.state = ann.state;
+        if (ann.scope === 'lga') { filter.state = ann.state; filter.lga = ann.lga; }
+        if (ann.scope === 'ward') { filter.state = ann.state; filter.lga = ann.lga; filter.ward = ann.ward; }
+
+        const members = await User.find(filter).select('phone');
+        
+        if (members.length > 0) {
+          // Format phone numbers to international format for Termii (e.g., 2348012345678)
+          const phoneNumbers = members.map(m => {
+            let p = m.phone.replace(/\D/g, ''); // Remove non-digits (like spaces or dashes)
+            if (p.startsWith('0')) p = '234' + p.slice(1); // Convert 080... to 23480...
+            return p;
+          });
+
+          const message = `JIBWIS Alert: ${ann.title}. Log in to the portal for full details.`;
+
+          await sendSms({
+            to: phoneNumbers,
+            message: message
+          });
+          console.log(`✅ SMS sent to ${phoneNumbers.length} members.`);
+        }
+      } catch (smsErr) {
+        console.error('🚨 SMS SENDING FAILED:', smsErr.message);
+      }
+    };
+
+    // Trigger SMS in the background
+    sendNotifications();
+
+    // 3. Return success response immediately
     res.status(201).json(ann);
   } catch (err) {
     next(err);
