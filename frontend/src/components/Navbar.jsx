@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom'; // 👈 Added Link
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/auth.jsx';
 import { useLang } from '../services/i18n.jsx';
 
@@ -53,6 +53,15 @@ export default function Navbar() {
                 {t('members')}
               </NavLink>
             )}
+            
+            {/* 👇 NEW: Donate Link */}
+            <NavLink 
+              to="/donate" 
+              className={({ isActive }) => isActive ? 'nav-item-donate active' : 'nav-item-donate'} 
+              onClick={() => setIsOpen(false)}
+            >
+              ❤️ Donate
+            </NavLink>
           </div>
 
           <div className="nav-actions">
@@ -69,7 +78,6 @@ export default function Navbar() {
             {/* User Info / Auth Buttons */}
             {user ? (
               <div className="user-section">
-                {/* 👇 CHANGED: User Chip is now a Link to /profile */}
                 <Link 
                   to="/profile" 
                   className="user-chip" 
