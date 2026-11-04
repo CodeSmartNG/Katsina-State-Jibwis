@@ -3,11 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JIBWIS Portal</title>
+    
+    <!-- SEO & Description -->
+    <title>JIBWIS Portal | Katsina State</title>
+    <meta name="description" content="The official digital portal for Jama'atu Izalatil Bid'ah Wa'iqamatis Sunnah (JIBWIS) Katsina State. Manage members, announcements, and activities." />
+    <meta name="theme-color" content="#0d9488" />
+
+    <!-- Open Graph (For WhatsApp, Facebook, Twitter sharing) -->
+    <meta property="og:title" content="JIBWIS Portal - Katsina State" />
+    <meta property="og:description" content="Official Members & Activities Portal for JIBWIS Katsina State." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://katsina-state-jibwis-rho.vercel.app/og-image.png" /> <!-- You can upload a logo here later -->
+
+    <!-- Google Fonts (Inter for premium typography) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Custom SVG Favicon (Green Dot with JIBWIS aesthetic) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230d9488' /%3E%3Ctext x='50' y='68' font-size='60' font-family='Arial, sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E" />
+
+    <!-- CSS for the Loading Screen -->
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #f4f7f6;
+      }
+      
+      /* Beautiful Loader */
+      .loader-container {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f4f7f6;
+        z-index: 9999;
+      }
+      
+      .loader-logo {
+        width: 60px;
+        height: 60px;
+        background-color: #0d9488;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 32px;
+        font-weight: bold;
+        animation: pulse 1.5s infinite ease-in-out;
+        box-shadow: 0 10px 20px rgba(13, 148, 136, 0.3);
+      }
+      
+      .loader-text {
+        margin-top: 20px;
+        color: #065f46;
+        font-weight: 600;
+        letter-spacing: 1px;
+        animation: fade 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.5); }
+        70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(13, 148, 136, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+      }
+      
+      @keyframes fade {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <!-- 👇 was "/src/main.jsx" — now relative -->
+    <!-- The React app will load inside this div -->
+    <div id="root">
+      <!-- Pre-loader (Will be replaced by React once loaded) -->
+      <div class="loader-container">
+        <div class="loader-logo">J</div>
+        <div class="loader-text">Loading JIBWIS Portal...</div>
+      </div>
+    </div>
+    
     <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>
