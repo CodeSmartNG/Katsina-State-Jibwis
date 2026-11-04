@@ -11,6 +11,10 @@ import Members from './pages/Members.jsx';
 import Profile from './pages/Profile.jsx'; 
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
+import Donate from './pages/Donate.jsx';
+import DonationSuccess from './pages/DonationSuccess.jsx';
+
+
 
 
 
@@ -27,6 +31,8 @@ export default function App() {
           <Route path="/activities" element={<Activities />} />
          <Route path="/forgot-password" element={<ForgotPassword />} />
          <Route path="/reset-password/:token" element={<ResetPassword />} />
+         <Route path="/donate" element={<Donate />} />
+         <Route path="/donation-success" element={<DonationSuccess />} />
           
           <Route
             path="/dashboard"
