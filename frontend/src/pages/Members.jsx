@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom'; // 👈 IMPORTED LINK
 import { api } from '../services/api.js';
 import { useAuth } from '../services/auth.jsx';
 import { useLang } from '../services/i18n.jsx';
@@ -91,7 +92,7 @@ export default function Members() {
     }
   };
 
-  // 👇 NEW: UPDATE ORGANIZATIONAL RANK (Text Edit)
+  // UPDATE ORGANIZATIONAL RANK (Text Edit)
   const updateRank = async (id, currentRank) => {
     const newRank = window.prompt("Enter new organizational rank/title (e.g., Chairman, Imam):", currentRank);
     if (newRank === null || newRank.trim() === '' || newRank === currentRank) return; 
@@ -286,7 +287,6 @@ export default function Members() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     {getRoleBadge(u.role)}
                     
-                    {/* 👇 UPDATED: Click-to-edit Rank text */}
                     {canManage ? (
                       <span 
                         onClick={() => updateRank(u._id, u.rank || 'Member')}
@@ -299,7 +299,6 @@ export default function Members() {
                       <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{u.rank || 'Member'}</span>
                     )}
 
-                    {/* Promote / Demote Role Arrows */}
                     {canManage && (
                       <div style={{ display: 'flex', gap: '2px' }}>
                         <button type="button" disabled={isTopRank} onClick={() => handleRankChange(u._id, u.role, 'promote')} title="Promote Role">
@@ -323,10 +322,20 @@ export default function Members() {
                       </button>
                     )}
 
+                    {/* 👇 NEW: SECURE ID CARD BUTTON */}
                     {canManage && (
-                      <button type="button" className="btn btn-sm" style={{ backgroundColor: '#ef4444', color: 'white' }} onClick={() => removeMember(u._id, u.fullName)}>
-                        Remove
-                      </button>
+                      <>
+                        <Link
+                          to={`/id-card-maker?name=${encodeURIComponent(u.fullName)}&id=${u._id}`}
+                          className="btn btn-sm"
+                          style={{ backgroundColor: '#3b82f6', color: 'white', textDecoration: 'none' }}
+                        >
+                          🪪 ID Card
+                        </Link>
+                        <button type="button" className="btn btn-sm" style={{ backgroundColor: '#ef4444', color: 'white' }} onClick={() => removeMember(u._id, u.fullName)}>
+                          Remove
+                        </button>
+                      </>
                     )}
                   </div>
                 </td>
