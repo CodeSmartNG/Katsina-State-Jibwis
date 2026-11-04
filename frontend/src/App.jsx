@@ -15,10 +15,6 @@ import Donate from './pages/Donate.jsx';
 import DonationSuccess from './pages/DonationSuccess.jsx';
 import IDCardMaker from './pages/IDCardMaker.jsx';
 
-
-
-
-
 export default function App() {
   return (
     <>
@@ -30,10 +26,10 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/activities" element={<Activities />} />
-         <Route path="/forgot-password" element={<ForgotPassword />} />
-         <Route path="/reset-password/:token" element={<ResetPassword />} />
-         <Route path="/donate" element={<Donate />} />
-         <Route path="/donation-success" element={<DonationSuccess />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/donate" element={<Donate />} />
+          <Route path="/donation-success" element={<DonationSuccess />} />
           
           <Route
             path="/dashboard"
@@ -61,17 +57,17 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
 
-        
-<Route
-  path="/id-card-maker"
-  element={
-    <ProtectedRoute roles={['stateAdmin']}>
-      <IDCardMaker />
-    </ProtectedRoute>
-  }
-/>
+          {/* 👇 THE FIX: This route is now safely INSIDE <Routes> */}
+          <Route
+            path="/id-card-maker"
+            element={
+              <ProtectedRoute roles={['stateAdmin']}>
+                <IDCardMaker />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
       </main>
     </>
   );
