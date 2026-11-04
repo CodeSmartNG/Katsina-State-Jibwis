@@ -19,10 +19,12 @@ router.get('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin
       filter.state = req.user.state;
       filter.lga = req.user.lga;
     } else if (req.user.role === 'stateAdmin') {
-      filter.state = req.user.state;
+      // 👇 CHANGED: State Admins now see ALL members (needed for ID Cards).
+      // If they want to filter by their own state, they can use the frontend filter.
     }
+
     if (role) filter.role = role;
-    if (state && req.user.role === 'stateAdmin') filter.state = state;
+    if (state) filter.state = state; // 👈 Applied for any role
     if (lga) filter.lga = lga;
     if (ward) filter.ward = ward;
     if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
@@ -37,7 +39,6 @@ router.get('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin
 // Officer creates a member (auto-approved)
 router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmin'), upload.single('profilePicture'), async (req, res, next) => {
   try {
-    // 👇 Added rank = 'Member' to the destructuring
     const { fullName, email, password, phone, role = 'member', rank = 'Member', state, lga, ward } = req.body;
     
     const profilePicture = req.file ? req.file.path : '';
@@ -59,7 +60,7 @@ router.post('/', authenticate, authorize('wardOfficer', 'lgaOfficer', 'stateAdmi
       password,
       phone,
       role,
-      rank, // 👈 Now this is safely defined
+      rank,
       state: state || req.user.state,
       lga: lga || req.user.lga,
       ward: ward || req.user.ward,
@@ -106,7 +107,7 @@ router.patch('/:id/role', authenticate, authorize('stateAdmin'), async (req, res
   }
 });
 
-// 👇 NEW: Update Organizational Rank (stateAdmin only)
+// Update Organizational Rank (stateAdmin only)
 router.patch('/:id/rank', authenticate, authorize('stateAdmin'), async (req, res, next) => {
   try {
     const { rank } = req.body;
@@ -171,7 +172,7 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
         fullName: updatedUser.fullName,
         email: updatedUser.email,
         role: updatedUser.role,
-        rank: updatedUser.rank, // 👈 Added rank to the response
+        rank: updatedUser.rank,
         state: updatedUser.state,
         lga: updatedUser.lga,
         ward: updatedUser.ward,
