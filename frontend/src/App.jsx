@@ -13,6 +13,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import Donate from './pages/Donate.jsx';
 import DonationSuccess from './pages/DonationSuccess.jsx';
+import IDCardMaker from './pages/IDCardMaker.jsx';
 
 
 
@@ -61,6 +62,16 @@ export default function App() {
             }
           />
         </Routes>
+
+        
+<Route
+  path="/id-card-maker"
+  element={
+    <ProtectedRoute roles={['stateAdmin']}>
+      <IDCardMaker />
+    </ProtectedRoute>
+  }
+/>
       </main>
     </>
   );
